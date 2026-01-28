@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-bg: #121414;
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { @apply bg-bg text-zinc-100; }
+  /* Hide scrollbars globally while preserving scroll behavior */
+  *::-webkit-scrollbar { width: 0px; height: 0px; display: none; }
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  button:hover,
+  [role="button"]:hover,
+  a[href]:hover,
+  input[type="button"]:hover,
+  input[type="submit"]:hover,
+  .btn:hover,
+  .sideitem:hover {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .page { @apply flex flex-col h-full; }
+  .content { @apply flex flex-1 overflow-hidden; }
+  .navbar { @apply h-14 flex items-center justify-between px-4 border-b border-zinc-800 bg-bg; }
+  .logo { @apply h-6 cursor-pointer; }
+  .actions { @apply flex items-center gap-2; }
+  .btn { @apply bg-zinc-900 border border-zinc-700 text-zinc-100 px-3 py-1 rounded-full hover:bg-zinc-800 hover:border-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors; }
+  .search { @apply w-full max-w-xl bg-zinc-900 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500; }
+  .input { @apply w-full bg-zinc-900 border border-zinc-700 text-zinc-100 px-3 py-2 rounded-lg focus:border-zinc-500 outline-none; }
+  .sidebar { @apply hidden md:block w-60 p-3 border-r border-zinc-800 bg-bg; }
+  .sideitem { @apply px-3 py-2 rounded hover:bg-zinc-800 cursor-pointer; }
+  .chips { @apply flex gap-2 px-4 py-3 overflow-x-auto whitespace-nowrap border-b border-zinc-800 bg-bg; }
+  .chip { @apply bg-zinc-900 border border-zinc-700 text-zinc-100 px-3 py-1 rounded-full transition-colors; }
+  .chip.active { @apply bg-zinc-100 text-black; }
+  .video-grid { @apply flex-1 overflow-auto px-4 pb-6 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4; grid-auto-rows: max-content; }
+  .video-card { @apply self-start bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-xl hover:border-zinc-700; }
+  .thumb { @apply relative aspect-video bg-black; }
+  .badge { @apply absolute left-2 bottom-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full border border-white/20; }
+  .badge.muted { @apply right-2 left-auto; }
+  .card-body { @apply p-3; }
+  .title { @apply text-sm leading-snug line-clamp-2; }
+  .meta { @apply text-xs text-zinc-400 flex items-center gap-2 mt-1; }
+  .dot { @apply w-1 h-1 rounded-full bg-zinc-600 inline-block; }
+  .meta { @apply text-xs text-zinc-400 flex gap-2 items-center; }
+  .dot { @apply w-1 h-1 bg-zinc-600 rounded-full inline-block; }
+}
+
+@utility line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
