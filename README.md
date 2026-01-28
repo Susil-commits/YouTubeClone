@@ -1,4 +1,4 @@
-# MyTube – Premium YouTube Clone (Frontend)
+# MyTube – Premium YouTube Clone (Full Stack)
 
 A refined, premium‑styled React + Vite frontend delivering a modern video experience with elegant UI, smooth animations, and responsive performance. Built with Tailwind CSS, Heroicons, and motion enhancements for a polished feel across pages.
 
