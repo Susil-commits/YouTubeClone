@@ -21,18 +21,6 @@ A refined, premium‑styled React + Vite frontend delivering a modern video expe
 - Auth endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/upload-logo`
 - Videos API: `/api/videos` create/list/update/delete, `/api/upload` for file uploads
 
-## Screenshots
-Place your screenshots at the paths below. These are dummy placeholders you can replace with your actual assets.
-
-### Home Page
-![Home](assets/Home.png)
-
-### Login Page
-![Login](assets/LOG.png)
-
-### Saved Page
-![Saved](assets/saved.png)
-
 ## Getting Started
 - Install dependencies: `npm install`
 - Start development server: `npm run dev`
