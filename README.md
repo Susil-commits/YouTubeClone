@@ -22,7 +22,6 @@ A refined, premium‑styled React + Vite frontend delivering a modern video expe
 - Videos API: `/api/videos` create/list/update/delete, `/api/upload` for file uploads
 
 ## Screenshots
-Place your screenshots at the paths below. These are dummy placeholders you can replace with your actual assets.
 
 ### Home Page
 ![Home](assets/Home.png)
