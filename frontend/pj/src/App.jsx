@@ -17,6 +17,8 @@ function App() {
   const [authTarget, setAuthTarget] = useState("home"); 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [creatorOpenCreate, setCreatorOpenCreate] = useState(false);
 
   function navigate(next) {
     if (next === "creator") {
@@ -44,6 +46,11 @@ function App() {
     setShowAuthModal(false);
     setIsAdmin(false);
     setView("home");
+    try { window.location.reload(); } catch { /* ignore */ }
+  }
+  function openCreatorWithCreate() {
+    setCreatorOpenCreate(true);
+    navigate("creator");
   }
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -84,7 +91,19 @@ function App() {
   }, []);
   return (
     <div className="page">
-      <Navbar onNavigate={navigate} onLogout={logout} userName={localStorage.getItem("userName") || ""} userLogo={localStorage.getItem("userLogo") || ""} isAdmin={isAdmin} onSearch={setSearchTerm} showCreate={view !== "creator"} showUserMenu={view !== "creator"} />
+      <Navbar 
+        onNavigate={navigate} 
+        onLogout={logout} 
+        userName={localStorage.getItem("userName") || ""} 
+        userLogo={localStorage.getItem("userLogo") || ""} 
+        isAdmin={isAdmin} 
+        onSearch={setSearchTerm} 
+        showCreate={view !== "creator"} 
+        showUserMenu={view !== "creator"} 
+        sidebarVisible={showSidebar}
+        onToggleSidebar={() => setShowSidebar(v => !v)}
+        onOpenCreate={openCreatorWithCreate}
+      />
 
       <div className="content relative">
         {view === "home" && (
@@ -93,7 +112,7 @@ function App() {
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-white/10 blur-3xl" />
           </div>
         )}
-        <Sidebar onNavigate={navigate} active={view} />
+        {showSidebar && <Sidebar onNavigate={navigate} active={view} />}
         {view === "home" && <MainContent searchTerm={searchTerm} onOpen={(v) => { setSelectedVideo(v); setView("watch"); }} />}
         {view === "trending" && <Trending onOpen={(v) => { setSelectedVideo(v); setView("watch"); }} />}
         {view === "subscriptions" && <Subscriptions onOpen={(v) => { setSelectedVideo(v); setView("watch"); }} />}
@@ -109,7 +128,7 @@ function App() {
             onCancel={() => setShowAuthModal(false)} 
         />}
 
-        {view === "creator" && <CreatorStudio onLogout={logout} />}
+        {view === "creator" && <CreatorStudio onLogout={logout} openCreateOnLoad={creatorOpenCreate} onClearCreateOpen={() => setCreatorOpenCreate(false)} />}
         {view === "admin" && <AdminVideoManager onLogout={logout} />}
         {view === "watch" && <WatchPage video={selectedVideo} onBack={() => setView("home")} onOpenVideo={(v) => { setSelectedVideo(v); window.scrollTo(0,0); }} />}
       </div>

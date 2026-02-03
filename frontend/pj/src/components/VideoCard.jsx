@@ -77,6 +77,9 @@ function VideoCard({ video, onOpen }) {
     localStorage.setItem("savedVideos", JSON.stringify(newList));
     setSaved(!saved);
     setShowMenu(false);
+    try {
+      window.dispatchEvent(new CustomEvent("saved-updated", { detail: { id: video._id, saved: !saved } }));
+    } catch (e) { void e; }
   };
 
   // Handle hover interactions
@@ -169,7 +172,7 @@ function VideoCard({ video, onOpen }) {
                    className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white text-left w-full"
                  >
                    <BookmarkIcon className={`h-4 w-4 ${saved ? "text-blue-500" : ""}`} />
-                   {saved ? "Saved" : "Save"}
+                   {saved ? "Unsave" : "Save"}
                  </button>
                  <button 
                    onClick={() => {

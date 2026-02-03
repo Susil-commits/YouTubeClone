@@ -10,8 +10,10 @@ function Subscriptions({ onOpen }) {
 
   useEffect(() => {
     // Load subscriptions from local storage
-    const s = JSON.parse(localStorage.getItem("subscriptions") || "[]");
-    setTimeout(() => setSubs(s), 0);
+    const userId = localStorage.getItem("userId");
+    const key = userId ? `subscriptions_${userId}` : null;
+    const s = key ? JSON.parse(localStorage.getItem(key) || "[]") : [];
+    setTimeout(() => setSubs(s.map(x => String(x))), 0);
     
     fetchPublicVideos()
         .then(list => setTimeout(() => setVideos(list), 0));
@@ -20,18 +22,19 @@ function Subscriptions({ onOpen }) {
   const channels = useMemo(() => {
     if (!subs || subs.length === 0) return [];
     const map = new Map();
-    // Initialize with subscribed names
-    for (const name of subs) {
-      map.set(name, { name, logo: "", count: 0, latestVideo: null });
+    for (const id of subs) {
+      map.set(String(id), { id: String(id), name: `Channel ${id}`, logo: "", count: 0, latestVideo: null });
     }
-    // Populate with video data
     for (const v of videos) {
-      if (map.has(v.creatorName)) {
-        const entry = map.get(v.creatorName);
+      const id = String(v.creatorId || "");
+      if (!id) continue;
+      if (map.has(id)) {
+        const entry = map.get(id);
+        entry.name = v.creatorName || entry.name;
         entry.count += 1;
         if (v.creatorLogo && !entry.logo) entry.logo = v.creatorLogo;
-        if (!entry.latestVideo) entry.latestVideo = v; 
-        map.set(v.creatorName, entry);
+        if (!entry.latestVideo) entry.latestVideo = v;
+        map.set(id, entry);
       }
     }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -39,7 +42,7 @@ function Subscriptions({ onOpen }) {
 
   const creatorVideos = useMemo(() => {
     if (!selectedCreator) return [];
-    return videos.filter(v => v.creatorName === selectedCreator);
+    return videos.filter(v => String(v.creatorId) === String(selectedCreator));
   }, [videos, selectedCreator]);
 
   const isLoggedIn = !!localStorage.getItem("userName"); 
@@ -78,11 +81,11 @@ function Subscriptions({ onOpen }) {
                     <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
                         {channels.map(ch => (
                             <button
-                                key={ch.name}
-                                onClick={() => setSelectedCreator(selectedCreator === ch.name ? null : ch.name)}
-                                className={`flex flex-col items-center gap-2 min-w-[100px] snap-start group transition-all ${selectedCreator === ch.name ? 'scale-105' : 'hover:scale-105'}`}
+                                key={ch.id}
+                                onClick={() => setSelectedCreator(selectedCreator === ch.id ? null : ch.id)}
+                                className={`flex flex-col items-center gap-2 min-w-[100px] snap-start group transition-all ${selectedCreator === ch.id ? 'scale-105' : 'hover:scale-105'}`}
                             >
-                                <div className={`relative w-20 h-20 rounded-full p-1 ${selectedCreator === ch.name ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-zinc-800 group-hover:bg-zinc-700'}`}>
+                                <div className={`relative w-20 h-20 rounded-full p-1 ${selectedCreator === ch.id ? 'bg-gradient-to-tr from-purple-500 to-pink-500' : 'bg-zinc-800 group-hover:bg-zinc-700'}`}>
                                     <div className="w-full h-full rounded-full overflow-hidden bg-black flex items-center justify-center text-xl font-bold border-2 border-black">
                                         {ch.logo ? (
                                             <img src={ch.logo} className="w-full h-full object-cover" />
@@ -96,7 +99,7 @@ function Subscriptions({ onOpen }) {
                                         </div>
                                     )}
                                 </div>
-                                <span className={`text-xs font-medium truncate w-full text-center ${selectedCreator === ch.name ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                                <span className={`text-xs font-medium truncate w-full text-center ${selectedCreator === ch.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                                     {ch.name}
                                 </span>
                             </button>
@@ -107,7 +110,7 @@ function Subscriptions({ onOpen }) {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-white">
-                                {selectedCreator ? `Videos by ${selectedCreator}` : "Recent Uploads"}
+                                {selectedCreator ? `Videos by ${channels.find(c => c.id === selectedCreator)?.name || selectedCreator}` : "Recent Uploads"}
                             </h2>
                             {selectedCreator && (
                                 <button 
@@ -125,7 +128,7 @@ function Subscriptions({ onOpen }) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {(selectedCreator ? creatorVideos : videos.filter(v => subs.includes(v.creatorName))).map(v => (
+                                {(selectedCreator ? creatorVideos : videos.filter(v => subs.includes(String(v.creatorId)))).map(v => (
                                     <VideoCard key={v._id} video={v} onOpen={onOpen} />
                                 ))}
                             </div>

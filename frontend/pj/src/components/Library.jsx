@@ -24,6 +24,18 @@ function Library({ onOpen }) {
       .catch(() => setTimeout(() => setVideos([]), 0))
       .finally(() => setTimeout(() => setLoading(false), 0));
   }, []);
+  useEffect(() => {
+    function onSaved(e) {
+      const id = e.detail?.id;
+      const saved = !!e.detail?.saved;
+      if (!id) return;
+      if (!saved) {
+        setVideos(list => list.filter(v => v._id !== id));
+      }
+    }
+    window.addEventListener("saved-updated", onSaved);
+    return () => window.removeEventListener("saved-updated", onSaved);
+  }, []);
 
   return (
     <div className="flex-1 overflow-auto custom-scrollbar bg-black text-white relative">

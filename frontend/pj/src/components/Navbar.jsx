@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { fetchNotifications } from "../utils/api";
-import { MagnifyingGlassIcon, UserCircleIcon, PlusIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon, PlayCircleIcon, BellIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, UserCircleIcon, PlusIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon, PlayCircleIcon, BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
-function Navbar({ onNavigate, onLogout, userName, userLogo, isAdmin, onSearch, showCreate = true, showUserMenu = true }) {
+function Navbar({ onNavigate, onLogout, userName, userLogo, isAdmin, onSearch, showCreate = true, showUserMenu = true, sidebarVisible = true, onToggleSidebar, onOpenCreate }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const notifRef = useRef(null);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
       if (userName) {
@@ -28,6 +30,9 @@ function Navbar({ onNavigate, onLogout, userName, userLogo, isAdmin, onSearch, s
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setShowNotifs(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -39,6 +44,13 @@ function Navbar({ onNavigate, onLogout, userName, userLogo, isAdmin, onSearch, s
     <header className="navbar flex items-center justify-between px-4 py-2 bg-black border-b border-zinc-800 sticky top-0 z-50">
 
       <div className="flex items-center gap-4">
+        <button
+          title={sidebarVisible ? "Close sidebar" : "Open sidebar"}
+          onClick={() => onToggleSidebar?.()}
+          className="p-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white"
+        >
+          {sidebarVisible ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
+        </button>
         <div 
             className="flex items-center gap-1 cursor-pointer"
             onClick={() => onNavigate("home")}
@@ -122,18 +134,37 @@ function Navbar({ onNavigate, onLogout, userName, userLogo, isAdmin, onSearch, s
                 </div>
                 
                 {showUserMenu && (
-                  <div className="relative group cursor-pointer ml-2">
-                      {userLogo ? (
-                        <img src={userLogo} className="h-8 w-8 rounded-full object-cover ring-2 ring-black" />
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-lg ring-2 ring-black">
-                          {userName.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="absolute right-0 top-full mt-2 w-32 bg-zinc-800 rounded-lg shadow-xl py-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50 border border-zinc-700">
+                  <div className="relative ml-2" ref={userMenuRef}>
+                      <button
+                        className="rounded-full focus:outline-none"
+                        onClick={() => setShowUserDropdown(s => !s)}
+                        title="User menu"
+                      >
+                        {userLogo ? (
+                          <img src={userLogo} className="h-8 w-8 rounded-full object-cover ring-2 ring-black" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-lg ring-2 ring-black">
+                            {userName.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </button>
+                      <div className={`absolute right-0 top-full mt-2 w-32 bg-zinc-800 rounded-lg shadow-xl py-1 transition-opacity z-50 border border-zinc-700 ${showUserDropdown ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                            <button 
                               className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white flex items-center gap-2"
-                              onClick={() => onLogout?.()}
+                              onClick={() => {
+                                setShowUserDropdown(false);
+                                onOpenCreate?.();
+                              }}
+                          >
+                              <UserCircleIcon className="h-4 w-4" />
+                              Profile
+                          </button>
+                           <button 
+                              className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white flex items-center gap-2"
+                              onClick={() => {
+                                setShowUserDropdown(false);
+                                onLogout?.();
+                              }}
                           >
                               <ArrowRightOnRectangleIcon className="h-4 w-4" />
                               Sign out

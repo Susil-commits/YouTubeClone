@@ -4,10 +4,10 @@ import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { CloudArrowUpIcon, PencilIcon, TrashIcon, VideoCameraIcon, PhotoIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
-function CreatorStudio({ onLogout }) {
+function CreatorStudio({ onLogout, openCreateOnLoad = false, onClearCreateOpen }) {
   void motion;
   const [videos, setVideos] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(openCreateOnLoad || false);
   const [form, setForm] = useState({ title: "", videoUrl: "", visibility: "public", isMuted: false, category: "other", description: "" });
   const [, setEditing] = useState(null);
   const [step, setStep] = useState(1);
@@ -22,6 +22,7 @@ function CreatorStudio({ onLogout }) {
   const [previewVideo, setPreviewVideo] = useState(null);
   const [editData, setEditData] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [editVideoProgress, setEditVideoProgress] = useState(0);
 
   useEffect(() => {
     fetchMyVideos().then(setVideos);
@@ -65,6 +66,11 @@ function CreatorStudio({ onLogout }) {
     setBannerPreview("");
     setBannerProgress(0);
   }
+  useEffect(() => {
+    if (openCreateOnLoad) {
+      onClearCreateOpen?.();
+    }
+  }, [openCreateOnLoad, onClearCreateOpen]);
 
   async function saveEdit(id, payload) {
     const updated = await updateVideo(id, payload);
@@ -432,7 +438,24 @@ function CreatorStudio({ onLogout }) {
                  </select>
                </div>
                <div className="space-y-4">
-                <video src={editData.videoUrl} className="w-full rounded-lg bg-black aspect-video border border-zinc-800" controls />
+                <div className="bg-zinc-800/50 p-3 rounded-xl border border-zinc-800">
+                  <video src={editData.videoUrl} className="w-full rounded-lg bg-black aspect-video" controls />
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">Replace Video File</label>
+                    <input className="w-full bg-black border border-zinc-700 rounded-lg p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" type="file" accept="video/*" onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const res = await uploadVideoFile(f, setEditVideoProgress);
+                      setEditData({ ...editData, videoUrl: res.url });
+                    }} />
+                    {editVideoProgress > 0 && editVideoProgress < 100 && (
+                      <div className="mt-2 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${editVideoProgress}%` }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                 <label className="block text-sm font-medium text-zinc-400 mb-1">Thumbnail</label>
                  <input className="w-full bg-black border border-zinc-700 rounded-lg p-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" type="file" accept="image/*" onChange={async (e) => {
                    const f = e.target.files?.[0];
                    if (!f) return;
@@ -443,7 +466,7 @@ function CreatorStudio({ onLogout }) {
              </div>
             <div className="p-6 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900 relative z-10">
               <button className="px-4 py-2 rounded-lg bg-transparent border border-zinc-700 hover:bg-zinc-800" onClick={() => setEditData(null)}>Cancel</button>
-              <button className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveEdit(editData._id, { title: editData.title, description: editData.description, visibility: editData.settings?.visibility, category: editData.category, bannerUrl: editData.bannerUrl })}>Save</button>
+              <button className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveEdit(editData._id, { title: editData.title, description: editData.description, visibility: editData.settings?.visibility, category: editData.category, bannerUrl: editData.bannerUrl, videoUrl: editData.videoUrl })}>Save</button>
              </div>
            </div>
          </div>

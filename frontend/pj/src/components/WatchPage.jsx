@@ -21,6 +21,10 @@ function WatchPage({ video, onBack, onOpenVideo }) {
   const [showShare, setShowShare] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [dislikeCount, setDislikeCount] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscribedVideos, setSubscribedVideos] = useState([]);
+  const containerRef = useRef(null);
   
   // Custom Progress Bar State
   const [currentTime, setCurrentTime] = useState(0);
@@ -82,12 +86,132 @@ function WatchPage({ video, onBack, onOpenVideo }) {
     }
     window.addEventListener("video-updated", onUpdated);
     return () => window.removeEventListener("video-updated", onUpdated);
-  }, [currentVideo?._id]);
+  }, [currentVideo?._id, currentVideo?.creatorId]);
   useEffect(() => {
     if (playerRef.current) {
       try { playerRef.current.muted = isMuted; } catch (e) { void e; }
     }
   }, [isMuted]);
+  useEffect(() => {
+    if (playerRef.current) {
+      try { playerRef.current.playbackRate = playbackRate; } catch (e) { void e; }
+    }
+  }, [playbackRate]);
+  useEffect(() => {
+    function onKey(e) {
+      try {
+        const v = playerRef.current;
+        if (!v) return;
+        const tag = (e.target && e.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (e.code === "Space" || e.key.toLowerCase() === "k") {
+          e.preventDefault();
+          v.paused ? v.play() : v.pause();
+        } else if (e.key.toLowerCase() === "m") {
+          setIsMuted((m) => !m);
+        } else if (e.key.toLowerCase() === "j") {
+          v.currentTime = Math.max(0, v.currentTime - 10);
+        } else if (e.key.toLowerCase() === "l") {
+          v.currentTime = Math.min(duration || v.duration || v.currentTime + 10, (duration || v.duration || 0));
+          if (!duration && v.duration) setDuration(v.duration);
+        } else if (e.key === "<") {
+          setPlaybackRate((r) => Math.max(0.5, Math.round((r - 0.25) * 100) / 100));
+        } else if (e.key === ">") {
+          setPlaybackRate((r) => Math.min(2, Math.round((r + 0.25) * 100) / 100));
+        }
+      } catch (err) { void err; }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [duration]);
+  useEffect(() => {
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        setSubscribed(false);
+        setSubscribedVideos([]);
+        return;
+      }
+      const subs = JSON.parse(localStorage.getItem(`subscriptions_${userId}`) || "[]");
+      if (!Array.isArray(subs) || subs.length === 0) {
+        setSubscribedVideos([]);
+        return;
+      }
+      fetchPublicVideos("All").then((all) => {
+        try {
+          const list = Array.isArray(all) ? all.filter(v => subs.includes(String(v.creatorId))) : [];
+          setSubscribedVideos(list.slice(0, 8));
+        } catch (e) { void e; }
+      }).catch((e) => { void e; });
+    } catch (e) { void e; }
+  }, [subscribed, currentVideo?.creatorId]);
+
+  const toSeconds = (s) => {
+    try {
+      const parts = String(s).split(":").map((x) => parseInt(x, 10));
+      if (parts.some((n) => Number.isNaN(n))) return null;
+      while (parts.length < 3) parts.unshift(0);
+      const [h, m, sec] = parts;
+      return h * 3600 + m * 60 + sec;
+    } catch (e) { void e; return null; }
+  };
+  const chapterTimes = Array.isArray(currentVideo?.timestamps)
+    ? currentVideo.timestamps.map((t) => toSeconds(t.time)).filter((n) => typeof n === "number")
+    : [];
+  const gotoPrevChapter = () => {
+    if (!chapterTimes.length || !playerRef.current) return;
+    const ct = playerRef.current.currentTime;
+    const prev = [...chapterTimes].filter((s) => s < ct).sort((a, b) => b - a)[0];
+    if (typeof prev === "number") playerRef.current.currentTime = prev;
+  };
+  const gotoNextChapter = () => {
+    if (!chapterTimes.length || !playerRef.current) return;
+    const ct = playerRef.current.currentTime;
+    const next = [...chapterTimes].filter((s) => s > ct).sort((a, b) => a - b)[0];
+    if (typeof next === "number") playerRef.current.currentTime = next;
+  };
+  const enterPiP = async () => {
+    const v = playerRef.current;
+    if (!v) return;
+    try {
+      if ("requestPictureInPicture" in v) {
+        await v.requestPictureInPicture();
+      }
+    } catch (e) { void e; }
+  };
+  const toggleFullscreen = () => {
+    try {
+      const el = containerRef.current || playerRef.current;
+      if (!el) return;
+      const doc = document;
+      if (doc.fullscreenElement) {
+        if (typeof doc.exitFullscreen === "function") doc.exitFullscreen();
+      } else {
+        if (typeof el.requestFullscreen === "function") el.requestFullscreen();
+      }
+    } catch (e) { void e; }
+  };
+  const toggleSubscribe = () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert("Please login to subscribe.");
+        return;
+      }
+      const key = `subscriptions_${userId}`;
+      const subs = JSON.parse(localStorage.getItem(key) || "[]");
+      const cid = String(currentVideo.creatorId || "");
+      let next = subs;
+      if (subscribed) {
+        next = subs.filter((x) => x !== cid);
+        setSubscribed(false);
+      } else {
+        next = Array.from(new Set([...subs, cid]));
+        setSubscribed(true);
+      }
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch (e) { void e; }
+  };
   useEffect(() => {
     if (!currentVideo?._id) return;
     try {
@@ -99,6 +223,13 @@ function WatchPage({ video, onBack, onOpenVideo }) {
       const r = reactions[currentVideo._id] || "none";
       setLiked(r === "like");
       setDisliked(r === "dislike");
+      const userId = localStorage.getItem("userId") || "guest";
+      const key = `subscriptions_${userId}`;
+      try {
+        const subs = JSON.parse(localStorage.getItem(key) || "[]");
+        const isSub = Array.isArray(subs) && subs.includes(String(currentVideo.creatorId));
+        setSubscribed(!!isSub);
+      } catch (e) { void e; }
     } catch (e) { void e; }
     fetchComments(currentVideo._id).then((list) => {
       if (Array.isArray(list)) setComments(list);
@@ -166,7 +297,7 @@ function WatchPage({ video, onBack, onOpenVideo }) {
         
         {/* Left: Player & Info */}
         <div className="lg:col-span-2 space-y-4">
-            <div className="relative group rounded-xl overflow-hidden bg-black shadow-2xl">
+            <div className="relative group rounded-xl overflow-hidden bg-black shadow-2xl" ref={containerRef}>
               <button 
                 className="absolute top-2 left-2 z-10 p-2 rounded-full bg-black/60 hover:bg-black/80 border border-white/10 text-white"
                 title="Back"
@@ -274,6 +405,50 @@ function WatchPage({ video, onBack, onOpenVideo }) {
                         >
                           {isMuted ? <SpeakerXMarkIcon className="h-5 w-5" /> : <SpeakerWaveIcon className="h-5 w-5" />}
                         </button>
+                        <button
+                          className="p-2 rounded-full bg-white text-black hover:bg-zinc-200"
+                          onClick={enterPiP}
+                          title="Picture-in-Picture"
+                        >
+                          <span className="text-xs font-bold">PiP</span>
+                        </button>
+                        <button
+                          className="p-2 rounded-full bg-white text-black hover:bg-zinc-200"
+                          onClick={toggleFullscreen}
+                          title="Fullscreen"
+                        >
+                          <span className="text-xs font-bold">Full</span>
+                        </button>
+                        <button
+                          className="p-2 rounded-full bg-white text-black hover:bg-zinc-200"
+                          onClick={() => {
+                            const steps = [0.5, 1, 1.25, 1.5, 2];
+                            const idx = steps.findIndex((x) => x === playbackRate);
+                            const next = steps[(idx + 1) % steps.length];
+                            setPlaybackRate(next);
+                          }}
+                          title="Playback Speed"
+                        >
+                          <span className="text-xs font-bold">{playbackRate}x</span>
+                        </button>
+                        {chapterTimes.length > 0 && (
+                          <>
+                            <button
+                              className="p-2 rounded-full bg-white text-black hover:bg-zinc-200"
+                              onClick={gotoPrevChapter}
+                              title="Prev Chapter"
+                            >
+                              <span className="text-xs font-bold">Prev</span>
+                            </button>
+                            <button
+                              className="p-2 rounded-full bg-white text-black hover:bg-zinc-200"
+                              onClick={gotoNextChapter}
+                              title="Next Chapter"
+                            >
+                              <span className="text-xs font-bold">Next</span>
+                            </button>
+                          </>
+                        )}
                         <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
                     </div>
                  </div>
@@ -291,8 +466,12 @@ function WatchPage({ video, onBack, onOpenVideo }) {
                           <div className="font-medium text-white">{currentVideo.creatorName}</div>
                           <div className="text-xs text-zinc-400">1.2M subscribers</div>
                       </div>
-                      <button className="ml-4 bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-200">
-                          Subscribe
+                      <button 
+                        className={`ml-4 px-4 py-2 rounded-full text-sm font-medium transition-colors border ${subscribed ? "bg-red-600 text-white border-red-500 hover:bg-red-700" : "bg-white text-black border-white hover:bg-zinc-200"}`}
+                        onClick={toggleSubscribe}
+                        title={subscribed ? "Subscribed" : "Subscribe"}
+                      >
+                          {subscribed ? "Subscribed" : "Subscribe"}
                       </button>
                   </div>
 
@@ -390,6 +569,20 @@ function WatchPage({ video, onBack, onOpenVideo }) {
                   {views} views • {gapLabel(currentVideo.createdAt || currentVideo.created_at || currentVideo.uploadedAt || currentVideo.timestamp)}
                 </div>
                 <p>{currentVideo.description || "Premium video player experience."}</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${subscribed ? "bg-red-600 text-white border-red-500 hover:bg-red-700" : "bg-white text-black border-white hover:bg-zinc-200"}`}
+                    onClick={toggleSubscribe}
+                    title={subscribed ? "Subscribed" : "Subscribe"}
+                  >
+                    {subscribed ? "Subscribed" : "Subscribe"}
+                  </button>
+                  {subscribed && (
+                    <span className="px-2 py-1 rounded-full text-[11px] bg-green-700/20 text-green-300 border border-green-600/40">
+                      Subscribed to {currentVideo.creatorName || "Channel"}
+                    </span>
+                  )}
+                </div>
                 <div className="mt-3">
                   <button 
                     className="px-3 py-1.5 text-xs rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300"
@@ -451,7 +644,7 @@ function WatchPage({ video, onBack, onOpenVideo }) {
                   <div className="space-y-2">
                     {comments.map((c, idx) => (
                       <div key={idx} className="bg-zinc-800/60 border border-zinc-700 rounded-lg p-2">
-                        <div className="text-xs text-zinc-400">{c.user} • {new Date(c.ts).toLocaleString()}</div>
+                        <div className="text-xs text-zinc-400">{c.authorName || "Guest User"} • {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}</div>
                         <div className="text-sm text-zinc-200">{c.text}</div>
                       </div>
                     ))}
@@ -481,13 +674,33 @@ function WatchPage({ video, onBack, onOpenVideo }) {
                     </div>
                 ))}
             </div>
+            <div className="mt-6">
+              <h3 className="font-bold text-lg px-1">Subscriptions</h3>
+              <div className="flex flex-col gap-3">
+                {subscribedVideos.map(v => (
+                  <div key={v._id} className="flex gap-2 cursor-pointer group" onClick={() => onOpenVideo?.(v)}>
+                    <div className="relative w-40 aspect-video rounded-lg overflow-hidden bg-zinc-900 shrink-0">
+                      {v.bannerUrl ? <img src={v.bannerUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">▶</div>}
+                    </div>
+                    <div className="flex-1 min-w-0 py-1">
+                      <h4 className="text-sm font-medium text-white line-clamp-2 leading-tight group-hover:text-pink-400 transition-colors">{v.title}</h4>
+                      <div className="text-xs text-zinc-400 mt-1">{v.creatorName}</div>
+                      <div className="text-xs text-zinc-400">{v.stats?.views || 0} views • {gapLabel(v.createdAt || v.created_at || v.uploadedAt || v.timestamp)}</div>
+                    </div>
+                  </div>
+                ))}
+                {subscribedVideos.length === 0 && (
+                  <div className="text-xs text-zinc-500 px-2">No subscriptions yet.</div>
+                )}
+              </div>
+            </div>
         </div>
 
       </div>
       <AnimatePresence>
         {showShare && (
           <ShareModal 
-            url={`${window.location.origin}/watch/${currentVideo._id}`}
+            url={`${window.location.origin}/watch/${currentVideo._id}?t=${Math.floor(currentTime || 0)}`}
             title={currentVideo.title}
             onClose={() => setShowShare(false)}
           />
