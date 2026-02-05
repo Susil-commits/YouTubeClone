@@ -66,21 +66,26 @@ app.get("/api/health", (req, res) => {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 let port = Number(process.env.PORT || 4000);
-const server = app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
 
-server.on("error", (err) => {
-  if (err && err.code === "EADDRINUSE") {
-    const next = port + 1;
-    console.warn(`Port ${port} in use, retrying on ${next}...`);
-    port = next;
-    setTimeout(() => {
-      app.listen(port, () => {
-        console.log(`Server listening on port ${port}`);
-      });
-    }, 500);
-  } else {
-    console.error("Server error", err);
-  }
-});
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  const server = app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+
+  server.on("error", (err) => {
+    if (err && err.code === "EADDRINUSE") {
+      const next = port + 1;
+      console.warn(`Port ${port} in use, retrying on ${next}...`);
+      port = next;
+      setTimeout(() => {
+        app.listen(port, () => {
+          console.log(`Server listening on port ${port}`);
+        });
+      }, 500);
+    } else {
+      console.error("Server error", err);
+    }
+  });
+}
+
+export default app;
