@@ -33,6 +33,13 @@ Place your screenshots at the paths below. These are dummy placeholders you can 
 ### Saved Page
 ![Saved](assets/saved.png)
 
+### Watch Page 
+![Watch](assets/watch1.png)
+![Watch](assets/watch2.png)
+
+### AdmincontrolPage
+![admin](assets/admin.png)
+
 ## Getting Started
 - Install dependencies: `npm install`
 - Start development server: `npm run dev`
