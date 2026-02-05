@@ -86,7 +86,7 @@ function WatchPage({ video, onBack, onOpenVideo }) {
     }
     window.addEventListener("video-updated", onUpdated);
     return () => window.removeEventListener("video-updated", onUpdated);
-  }, [currentVideo?._id, currentVideo?.creatorId]);
+  }, [currentVideo?._id, currentVideo?.creatorId]); currentVideo?.creatorId]);
   useEffect(() => {
     if (playerRef.current) {
       try { playerRef.current.muted = isMuted; } catch (e) { void e; }

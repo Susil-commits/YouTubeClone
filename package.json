@@ -1,0 +1,14 @@
+{
+  "name": "youtube-clone-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend/pj",
+    "server"
+  ],
+  "scripts": {
+    "build": "echo 'Root build skipped'"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
