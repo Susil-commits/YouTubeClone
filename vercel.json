@@ -9,20 +9,20 @@
       "src": "frontend/pj/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/pj/dist"
+        "distDir": "dist"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/src/index.js"
+      "dest": "/server/src/index.js"
     },
     {
       "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
+      "src": "^/(.*)",
       "dest": "/frontend/pj/dist/index.html"
     }
   ]

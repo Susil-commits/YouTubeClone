@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import videosRouter from "./routes/videos.js";
 import authRouter from "./routes/auth.js";
+import uploadsRouter from "./routes/uploads.js";
 import dns from "dns";
 
 dotenv.config();
@@ -21,22 +22,44 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-const mongoUri = process.env.MONGODB_URI || "mongodb+srv://sujata2022_db_user:sujata1234@cluster0.jywpvfi.mongodb.net/?appName=Cluster0";
+const mongoUri = process.env.MONGODB_URI || null;
 const fallbackLocalUri = process.env.MONGODB_FALLBACK_URI || "mongodb://127.0.0.1:27017/youtube_clone";
 
 async function connectMongoWithRetry(retry = 0, useFallback = false) {
   try {
-    const uri = useFallback ? fallbackLocalUri : mongoUri;
-    await mongoose.connect(uri, {
+    const uri = useFallback ? fallbackLocalUri : mongoUri || fallbackLocalUri;
+
+    // Use cached connection in serverless environments to avoid connection churn
+    if (globalThis._mongoose && globalThis._mongoose.conn) {
+      console.log("Using cached MongoDB connection");
+      return;
+    }
+    if (globalThis._mongoose && globalThis._mongoose.promise) {
+      await globalThis._mongoose.promise;
+      return;
+    }
+
+    const opts = {
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
       retryWrites: true
+    };
+
+    const connectPromise = mongoose.connect(uri, opts).then((m) => {
+      globalThis._mongoose = { conn: m, promise: null };
+      return m;
+    }).catch((e) => {
+      globalThis._mongoose = { conn: null, promise: null };
+      throw e;
     });
+
+    globalThis._mongoose = { conn: null, promise: connectPromise };
+    await connectPromise;
     console.log(`MongoDB connected${useFallback ? " (fallback)" : ""}`);
   } catch (err) {
     console.error("MongoDB connection error", err);
     const next = Math.min(30000, 2000 * Math.pow(2, retry));
-    const willFallback = !useFallback && String(err?.code || "").toUpperCase() === "ECONNREFUSED" && mongoUri.startsWith("mongodb+srv://");
+    const willFallback = !useFallback && String(err?.code || "").toUpperCase() === "ECONNREFUSED" && Boolean(mongoUri);
     console.log(`Retrying MongoDB connection in ${Math.round(next / 1000)}s...${willFallback ? " using local fallback" : ""}`);
     setTimeout(() => connectMongoWithRetry(retry + 1, willFallback || useFallback), next);
   }
@@ -55,6 +78,7 @@ mongoose.connection.on("disconnected", () => {
 
 app.use("/api", videosRouter);
 app.use("/api", authRouter);
+app.use("/api", uploadsRouter);
 
 app.get("/api/health", (req, res) => {
   res.json({

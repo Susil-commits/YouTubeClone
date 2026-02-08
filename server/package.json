@@ -13,7 +13,9 @@
     "express": "^4.22.1",
     "mongoose": "^8.6.0",
     "morgan": "^1.10.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "@aws-sdk/client-s3": "^3.365.0",
+    "@aws-sdk/s3-request-presigner": "^3.365.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
