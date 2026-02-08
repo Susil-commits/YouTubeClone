@@ -3,3 +3,4 @@ node_modules
 echo "server/src/uploads/"
 
 .vercel
+.env*.local
