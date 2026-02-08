@@ -9,6 +9,7 @@ import videosRouter from "./routes/videos.js";
 import authRouter from "./routes/auth.js";
 import uploadsRouter from "./routes/uploads.js";
 import dns from "dns";
+import serverless from "serverless-http";
 
 dotenv.config();
 
@@ -18,7 +19,29 @@ const __dirname = path.dirname(__filename);
 dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow only the frontend origin(s) in production.
+// Set FRONTEND_URL to your Vercel frontend URL, e.g. https://my-app.vercel.app
+// Optionally set ADDITIONAL_ORIGINS as a comma-separated list.
+const frontEndUrl = process.env.FRONTEND_URL;
+const additional = process.env.ADDITIONAL_ORIGINS || "";
+const allowedOrigins = [];
+if (frontEndUrl) allowedOrigins.push(frontEndUrl);
+if (additional) allowedOrigins.push(...additional.split(",").map(s => s.trim()).filter(Boolean));
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow non-browser requests like curl/postman (no origin)
+    if (!origin) return callback(null, true);
+    // if no allowed origins configured, allow any (useful for dev)
+    if (allowedOrigins.length === 0) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS policy: origin not allowed"), false);
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -113,3 +136,6 @@ if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
 }
 
 export default app;
+
+// Export a serverless handler for Vercel / other serverless platforms
+export const handler = serverless(app);

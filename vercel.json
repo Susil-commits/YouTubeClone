@@ -1,5 +1,25 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "frontend/pj/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "server/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/$1"
+    }
+  ]
+}
+{
+  "version": 2,
   "installCommand": "npm install --no-optional",
   "builds": [
     {
