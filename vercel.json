@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "npm install --no-optional",
+  "installCommand": "cd frontend/pj && npm install --no-optional",
   "builds": [
     {
       "src": "frontend/pj/package.json",
@@ -8,14 +8,14 @@
       "config": { "distDir": "dist" }
     },
     {
-      "src": "server/src/index.js",
+      "src": "server/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/src/index.js"
+      "dest": "/server/index.js"
     },
     {
       "handle": "filesystem"
