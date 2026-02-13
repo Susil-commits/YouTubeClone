@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "cd frontend/pj && npm install --no-optional",
+  "installCommand": "if [ -d \"frontend/pj\" ]; then cd frontend/pj && npm install --no-optional; else npm install --no-optional; fi",
   "builds": [
     {
       "src": "frontend/pj/package.json",
