@@ -1,0 +1,16 @@
+services:
+- type: web
+  name: youtubeclone-backend
+  env: node
+  plan: free
+  region: oregon
+  buildCommand: "cd server && npm install --no-optional"
+  startCommand: "cd server && npm start"
+  autoDeploy: true
+  envVars:
+    - key: MONGODB_URI
+      sync: false
+    - key: FRONTEND_URL
+      sync: false
+    - key: ADDITIONAL_ORIGINS
+      sync: false

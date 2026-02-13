@@ -110,6 +110,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Simple root health route so the base URL (/) returns a friendly message
+app.get("/", (req, res) => {
+  res.send("YouTube Clone Server is running perfectly!");
+});
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 let port = Number(process.env.PORT || 4000);
