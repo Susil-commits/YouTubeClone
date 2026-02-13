@@ -20,12 +20,13 @@ dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 
-// Configure CORS to allow only the frontend origin(s) in production.
-// Set FRONTEND_URL to your Vercel frontend URL, e.g. https://my-app.vercel.app
-// Optionally set ADDITIONAL_ORIGINS as a comma-separated list.
-const frontEndUrl = process.env.FRONTEND_URL;
+// Configure CORS to allow the frontend origin(s).
+// Set `FRONTEND_URL` to your Vercel frontend URL (e.g. https://your-frontend.vercel.app).
+// Optionally set `ADDITIONAL_ORIGINS` as a comma-separated list.
+// Always allow local dev origin `http://localhost:5173` so local Vite dev works.
+const frontEndUrl = process.env.FRONTEND_URL || "https://your-frontend-name.vercel.app";
 const additional = process.env.ADDITIONAL_ORIGINS || "";
-const allowedOrigins = [];
+const allowedOrigins = ["http://localhost:5173"];
 if (frontEndUrl) allowedOrigins.push(frontEndUrl);
 if (additional) allowedOrigins.push(...additional.split(",").map(s => s.trim()).filter(Boolean));
 
