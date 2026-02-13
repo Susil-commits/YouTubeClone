@@ -26,8 +26,6 @@ Push your code to a GitHub repository.
 
 ### 3. Configure Project
 Vercel should automatically detect the `vercel.json` configuration.
--   **Framework Preset**: Leave as "Other" or default (Vercel will use the configuration in `vercel.json`).
--   **Root Directory**: Keep it as `./` (the project root).
 
 ### 4. Environment Variables
 In the "Environment Variables" section, add the following:
@@ -43,6 +41,69 @@ Click **"Deploy"**. Vercel will:
 1.  Build the frontend (`npm run build` in `frontend/pj`).
 2.  Deploy the backend as a serverless function (`server/src/index.js`).
 
+## Deploy to Render
+
+This repository can also be deployed to Render as a Node web service (useful if you prefer a traditional server instance instead of Vercel serverless functions).
+
+Steps:
+
+1. Go to https://dashboard.render.com and sign in with GitHub (or connect your Git provider).
+2. Click **New** → **Web Service**.
+3. Select the repository containing this project.
+4. For **Name**, use `youtubeclone-backend` (or any name you prefer).
+5. Set **Environment** to `Node`.
+6. Set the **Build Command** to:
+
+```
+cd server && npm install --no-optional
+```
+
+7. Set the **Start Command** to:
+
+```
+cd server && npm start
+```
+
+8. Add the required environment variables in the Render dashboard:
+
+- `MONGODB_URI` — your MongoDB Atlas connection string
+- `JWT_SECRET` — secret used by the backend
+- `FRONTEND_URL` — your frontend URL (Vercel URL, e.g. `https://your-app.vercel.app`)
+- `ADDITIONAL_ORIGINS` — optional comma-separated extra origins
+
+9. Enable **Auto Deploy** (optional) so Render redeploys on each push.
+
+Health check & verification:
+
+- Render will provide a public URL for your service (e.g. `https://youtubeclone-backend.onrender.com`).
+- Verify the backend is healthy by visiting:
+
+```
+https://<your-render-url>/api/health
+```
+
+This endpoint returns a small JSON payload with `db_ready_state` and `ok` fields.
+
+Showing your running Vercel clone (frontend + serverless):
+
+- If you already have the project imported into Vercel, open your Vercel dashboard and select the project. The most recent deployment URL is shown in the deployment list.
+- To quickly check the Vercel deployment health, open:
+
+```
+https://<your-vercel-url>/api/health
+```
+
+- From your development machine you can `curl` either endpoint:
+
+```bash
+curl -s https://<your-render-url>/api/health | jq
+curl -s https://<your-vercel-url>/api/health | jq
+```
+
+Notes and tips:
+
+- The backend already respects `process.env.PORT` and has a `start` script (`node src/index.js`), so Render will be able to start it with the `startCommand` above.
+- Files uploaded to the local `server/src/uploads` folder are ephemeral on most cloud hosts; consider switching to S3 or another persistent store for production.
 ## Troubleshooting
 
 -   **Frontend 404s**: If refreshing a page gives a 404, ensure the `vercel.json` "routes" section correctly points to `index.html`.
