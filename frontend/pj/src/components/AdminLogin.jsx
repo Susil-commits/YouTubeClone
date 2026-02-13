@@ -8,7 +8,7 @@ function AdminLogin({ onSuccess, onCancel }) {
   async function submit() {
     setError("");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/admin/login", {
+      const res = await fetch("https://youtubeclone-5hae.onrender.com/api/auth/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })

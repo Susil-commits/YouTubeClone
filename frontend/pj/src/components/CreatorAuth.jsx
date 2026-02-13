@@ -18,7 +18,7 @@ function CreatorAuth({ mode, onSuccess, onCancel }) {
   async function register() {
     setError("");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/register", {
+      const res = await fetch("https://youtubeclone-5hae.onrender.com/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, password, role: mode, logo: logoUrl })
