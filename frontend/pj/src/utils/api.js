@@ -1,17 +1,37 @@
 import axios from "axios";
-// Use Vercel project env variable when set; fall back to relative `/api` in production
-let API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "https://youtubeclone-5hae.onrender.com/api" : "/api");
-// If the user provided only the root domain (no /api), append /api so
-// frontend requests go to the backend API path. Normalize trailing slashes.
-if (API_BASE && API_BASE.startsWith("http")) {
-  API_BASE = API_BASE.replace(/\/$/, "");
+const rawApi = import.meta.env.VITE_API_URL;
+let API_BASE = null;
+if (rawApi) {
+  API_BASE = rawApi.replace(/\/$/, "");
   if (!API_BASE.endsWith("/api")) API_BASE = API_BASE + "/api";
+} else if (import.meta.env.DEV) {
+  API_BASE = "https://youtubeclone-5hae.onrender.com/api";
+} else {
+  // In production we must not silently fall back to a relative /api.
+  console.error(
+    "VITE_API_URL is not set. Please set VITE_API_URL=https://<your-backend> in Vercel environment variables."
+  );
+  API_BASE = null;
 }
+
 export { API_BASE };
 
-// Configure axios global defaults so cookies are sent to the backend
-axios.defaults.baseURL = API_BASE;
+// Configure axios global defaults so cookies are sent to the backend when API_BASE exists
+if (API_BASE) {
+  axios.defaults.baseURL = API_BASE;
+}
 axios.defaults.withCredentials = true;
+
+function buildUrl(path) {
+  if (!API_BASE) {
+    const msg =
+      "Missing VITE_API_URL: cannot build API URL in production. Set VITE_API_URL to your Render backend domain.";
+    console.error(msg);
+    throw new Error(msg);
+  }
+  if (!path.startsWith("/")) path = "/" + path;
+  return `${API_BASE}${path}`;
+}
 
 function getUserId() {
   return localStorage.getItem("userId") || "64c9f0f0f0f0f0f0f0f0f0f0";
@@ -27,25 +47,24 @@ function baseHeaders(admin = false) {
 
 export async function fetchPublicVideos(category) {
   const qs = category && category !== "All" ? `?category=${encodeURIComponent(category.toLowerCase())}` : "";
-  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(false), credentials: 'include' });
+  const res = await fetch(buildUrl(`/videos${qs}`), { headers: baseHeaders(false), credentials: 'include' });
   return res.json();
 }
 
 export async function fetchMyVideos(category) {
-  const base = `${API_BASE}/videos?mine=1`;
-  const url = category && category !== "All" ? `${base}&category=${encodeURIComponent(category.toLowerCase())}` : base;
-  const res = await fetch(url, { headers: baseHeaders(false), credentials: 'include' });
+  const qs = category && category !== "All" ? `&category=${encodeURIComponent(category.toLowerCase())}` : "";
+  const res = await fetch(buildUrl(`/videos?mine=1${qs}`), { headers: baseHeaders(false), credentials: 'include' });
   return res.json();
 }
 
 export async function fetchAllVideosAdmin(category) {
   const qs = category && category !== "All" ? `?category=${encodeURIComponent(category.toLowerCase())}` : "";
-  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(true), credentials: 'include' });
+  const res = await fetch(buildUrl(`/videos${qs}`), { headers: baseHeaders(true), credentials: 'include' });
   return res.json();
 }
 
 export async function createVideo(payload) {
-  const res = await fetch(`${API_BASE}/videos`, {
+  const res = await fetch(buildUrl(`/videos`), {
     method: "POST",
     headers: baseHeaders(false),
     body: JSON.stringify(payload),
@@ -55,7 +74,7 @@ export async function createVideo(payload) {
 }
 
 export async function updateVideo(id, payload) {
-  const res = await fetch(`${API_BASE}/videos/${id}`, {
+  const res = await fetch(buildUrl(`/videos/${id}`), {
     method: "PATCH",
     headers: baseHeaders(false),
     body: JSON.stringify(payload),
@@ -65,7 +84,7 @@ export async function updateVideo(id, payload) {
 }
 
 export async function adminMuteOverride(id, value) {
-  const res = await fetch(`${API_BASE}/admin/videos/${id}/mute-override`, {
+  const res = await fetch(buildUrl(`/admin/videos/${id}/mute-override`), {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ adminMuteOverride: value }),
@@ -75,7 +94,7 @@ export async function adminMuteOverride(id, value) {
 }
 
 export async function adminSetApproved(id, value) {
-  const res = await fetch(`${API_BASE}/admin/videos/${id}/approve`, {
+  const res = await fetch(buildUrl(`/admin/videos/${id}/approve`), {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ isApproved: value }),
@@ -85,7 +104,7 @@ export async function adminSetApproved(id, value) {
 }
 
 export async function adminSetVisibility(id, visibility) {
-  const res = await fetch(`${API_BASE}/admin/videos/${id}/visibility`, {
+  const res = await fetch(buildUrl(`/admin/videos/${id}/visibility`), {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ visibility }),
@@ -97,7 +116,7 @@ export async function adminSetVisibility(id, visibility) {
 export async function uploadVideoFile(file, onProgress) {
   const form = new FormData();
   form.append("file", file);
-  const res = await axios.post(`${API_BASE}/upload`, form, {
+  const res = await axios.post(buildUrl(`/upload`), form, {
     headers: {
       "x-user-id": getUserId(),
       "x-admin": "false"
@@ -112,7 +131,7 @@ export async function uploadVideoFile(file, onProgress) {
 export async function uploadLogoFile(file, onProgress) {
   const form = new FormData();
   form.append("file", file);
-  const res = await axios.post(`${API_BASE}/auth/upload-logo`, form, {
+  const res = await axios.post(buildUrl(`/auth/upload-logo`), form, {
     headers: {
       "x-user-id": getUserId(),
       "x-admin": "false"
@@ -125,7 +144,7 @@ export async function uploadLogoFile(file, onProgress) {
 }
 
 export async function deleteVideo(id) {
-  const res = await fetch(`${API_BASE}/videos/${id}`, {
+  const res = await fetch(buildUrl(`/videos/${id}`), {
     method: "DELETE",
     headers: baseHeaders(false),
     credentials: 'include'
@@ -134,7 +153,7 @@ export async function deleteVideo(id) {
 }
 
 export async function adminDeleteVideo(id) {
-  const res = await fetch(`${API_BASE}/admin/videos/${id}`, {
+  const res = await fetch(buildUrl(`/admin/videos/${id}`), {
     method: "DELETE",
     headers: baseHeaders(true),
     credentials: 'include'
@@ -143,7 +162,7 @@ export async function adminDeleteVideo(id) {
 }
 
 export async function recordView(id) {
-  const res = await fetch(`${API_BASE}/videos/${id}/view`, {
+  const res = await fetch(buildUrl(`/videos/${id}/view`), {
     method: "POST",
     headers: baseHeaders(false),
     credentials: 'include'
@@ -152,7 +171,7 @@ export async function recordView(id) {
 }
 
 export async function fetchNotifications() {
-  const res = await fetch(`${API_BASE}/auth/notifications`, {
+  const res = await fetch(buildUrl(`/auth/notifications`), {
     headers: baseHeaders(false),
     credentials: 'include'
   });
@@ -160,7 +179,7 @@ export async function fetchNotifications() {
 }
 
 export async function fetchComments(videoId) {
-  const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
+  const res = await fetch(buildUrl(`/videos/${videoId}/comments`), {
     headers: baseHeaders(false),
     credentials: 'include'
   });
@@ -168,7 +187,7 @@ export async function fetchComments(videoId) {
 }
 
 export async function postComment(videoId, text) {
-  const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
+  const res = await fetch(buildUrl(`/videos/${videoId}/comments`), {
     method: "POST",
     headers: baseHeaders(false),
     body: JSON.stringify({ text }),
