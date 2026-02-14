@@ -1,5 +1,5 @@
 import axios from "axios";
-const rawApi = import.meta.env.VITE_API_URL;
+const rawApi = "https://youtubeclone-d2s7.onrender.com";
 let API_BASE = null;
 if (rawApi) {
   API_BASE = rawApi.replace(/\/$/, "");
