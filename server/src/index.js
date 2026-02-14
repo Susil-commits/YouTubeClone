@@ -32,6 +32,9 @@ const allowedOrigins = ["http://localhost:5173"];
 if (frontEndUrl) allowedOrigins.push(frontEndUrl);
 if (additional) allowedOrigins.push(...additional.split(",").map(s => s.trim()).filter(Boolean));
 if (frontendUrls) allowedOrigins.push(...frontendUrls.split(",").map(s => s.trim()).filter(Boolean));
+// Always allow the known Vercel frontend domain for this project
+const VERCEL_FRONTEND = "https://you-tube-clone-pj-phs1.vercel.app";
+if (!allowedOrigins.includes(VERCEL_FRONTEND)) allowedOrigins.push(VERCEL_FRONTEND);
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -112,8 +115,9 @@ if (!globalThis._mongoose || (!globalThis._mongoose.conn && !globalThis._mongoos
 // Recommended cookie options for production (Vercel frontend + backend)
 export const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  // Force secure and sameSite none in production so cookies work across domains on Vercel
+  secure: true,
+  sameSite: "none",
   // domain can be set to your root domain if needed, e.g. ".example.com"
   // domain: process.env.COOKIE_DOMAIN || undefined,
   maxAge: 1000 * 60 * 60 * 24 * 7
