@@ -1,6 +1,13 @@
 import axios from "axios";
 // Use Vercel project env variable when set; fall back to relative `/api` in production
-export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "https://youtubeclone-5hae.onrender.com/api" : "/api");
+let API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "https://youtubeclone-5hae.onrender.com/api" : "/api");
+// If the user provided only the root domain (no /api), append /api so
+// frontend requests go to the backend API path. Normalize trailing slashes.
+if (API_BASE && API_BASE.startsWith("http")) {
+  API_BASE = API_BASE.replace(/\/$/, "");
+  if (!API_BASE.endsWith("/api")) API_BASE = API_BASE + "/api";
+}
+export { API_BASE };
 
 // Configure axios global defaults so cookies are sent to the backend
 axios.defaults.baseURL = API_BASE;
