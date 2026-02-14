@@ -6,7 +6,7 @@
       "src": "frontend/pj/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
-    },
+    }
     
   ],
   "routes": [
