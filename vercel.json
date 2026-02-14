@@ -15,7 +15,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/src/index.js"
+      "dest": "https://youtubeclone-d2s7.onrender.com/api/$1"
     },
     {
       "handle": "filesystem"
