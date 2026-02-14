@@ -22,13 +22,16 @@ const app = express();
 
 // Configure CORS to allow the frontend origin(s).
 // Set `FRONTEND_URL` to your Vercel frontend URL (e.g. https://your-frontend.vercel.app).
-// Optionally set `ADDITIONAL_ORIGINS` as a comma-separated list.
+// Optionally set `ADDITIONAL_ORIGINS` or `FRONTEND_URLS` as a comma-separated list.
 // Always allow local dev origin `http://localhost:5173` so local Vite dev works.
-const frontEndUrl = process.env.FRONTEND_URL || "https://your-frontend-name.vercel.app";
+const frontEndUrl = process.env.FRONTEND_URL || "";
 const additional = process.env.ADDITIONAL_ORIGINS || "";
+// New: FRONTEND_URLS can contain multiple comma-separated origins (useful for preview domains)
+const frontendUrls = process.env.FRONTEND_URLS || "";
 const allowedOrigins = ["http://localhost:5173"];
 if (frontEndUrl) allowedOrigins.push(frontEndUrl);
 if (additional) allowedOrigins.push(...additional.split(",").map(s => s.trim()).filter(Boolean));
+if (frontendUrls) allowedOrigins.push(...frontendUrls.split(",").map(s => s.trim()).filter(Boolean));
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -46,6 +49,14 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Helpful debug middleware: logs origin and path for incoming requests
+app.use((req, res, next) => {
+  try {
+    const origin = req.get("origin") || "-";
+    console.log(`[REQ] ${req.method} ${req.path} Origin: ${origin}`);
+  } catch (e) {}
+  next();
+});
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -147,4 +158,14 @@ export const handler = serverless(app);
 // environments because `module` is undefined there.
 if (typeof module !== "undefined" && module?.exports) {
   module.exports = app;
+}
+
+// If we're running on a traditional Node host (Render, Heroku, etc.)
+// we must bind to a port so the platform's load balancer can route traffic.
+// On Vercel (serverless) we _do not_ start a listener.
+if (!process.env.VERCEL) {
+  const port = Number(process.env.PORT || 4000);
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
 }
