@@ -104,7 +104,9 @@ async function connectMongoWithRetry(retry = 0, useFallback = false) {
 }
 // Only attempt to connect if we don't already have a cached connection/promise.
 if (!globalThis._mongoose || (!globalThis._mongoose.conn && !globalThis._mongoose.promise)) {
-  connectMongoWithRetry();
+  // Start Mongo connection asynchronously so it cannot block startup.
+  // Using setImmediate ensures the call happens after the current event loop turn.
+  setImmediate(() => connectMongoWithRetry());
 }
 
 // Recommended cookie options for production (Vercel frontend + backend)
@@ -139,8 +141,9 @@ app.get("/api/health", (req, res) => {
 });
 
 // Simple root health route so the base URL (/) returns a friendly message
+// Simple root health route — explicit 200 helps Render health checks
 app.get("/", (req, res) => {
-  res.send("YouTube Clone Server is running perfectly!");
+  res.status(200).send("Server is running");
 });
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -165,7 +168,13 @@ if (typeof module !== "undefined" && module?.exports) {
 // On Vercel (serverless) we _do not_ start a listener.
 if (!process.env.VERCEL) {
   const port = Number(process.env.PORT || 4000);
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+  const host = process.env.HOST || "0.0.0.0";
+  const server = app.listen(port, host, () => {
+    console.log(`Server listening on ${host}:${port}`);
+  });
+  server.on("error", (err) => {
+    console.error("Server error", err);
+    // Exit so the platform can restart the service if necessary
+    process.exit(1);
   });
 }
