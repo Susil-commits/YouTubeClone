@@ -7,16 +7,10 @@
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
     },
-    {
-      "src": "server/src/index.js",
-      "use": "@vercel/node"
-    }
+    
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://youtubeclone-d2s7.onrender.com/api/$1"
-    },
+    
     {
       "handle": "filesystem"
     },
