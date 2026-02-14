@@ -39,7 +39,10 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("CORS policy: origin not allowed"), false);
   },
-  credentials: true
+  // Allow cookies/credentials across the Vercel frontend <> backend domains
+  credentials: true,
+  // Some clients may require a successful OPTIONS status other than 204
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
@@ -88,7 +91,20 @@ async function connectMongoWithRetry(retry = 0, useFallback = false) {
     setTimeout(() => connectMongoWithRetry(retry + 1, willFallback || useFallback), next);
   }
 }
-connectMongoWithRetry();
+// Only attempt to connect if we don't already have a cached connection/promise.
+if (!globalThis._mongoose || (!globalThis._mongoose.conn && !globalThis._mongoose.promise)) {
+  connectMongoWithRetry();
+}
+
+// Recommended cookie options for production (Vercel frontend + backend)
+export const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  // domain can be set to your root domain if needed, e.g. ".example.com"
+  // domain: process.env.COOKIE_DOMAIN || undefined,
+  maxAge: 1000 * 60 * 60 * 24 * 7
+};
 
 mongoose.connection.on("connected", () => {
   console.log("MongoDB connected (event)");
@@ -118,30 +134,17 @@ app.get("/", (req, res) => {
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-let port = Number(process.env.PORT || 4000);
-
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-  const server = app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-
-  server.on("error", (err) => {
-    if (err && err.code === "EADDRINUSE") {
-      const next = port + 1;
-      console.warn(`Port ${port} in use, retrying on ${next}...`);
-      port = next;
-      setTimeout(() => {
-        app.listen(port, () => {
-          console.log(`Server listening on port ${port}`);
-        });
-      }, 500);
-    } else {
-      console.error("Server error", err);
-    }
-  });
-}
+// In serverless deployments (Vercel) we do not call `app.listen` here.
+// When running locally for development, use `npm run dev` which uses nodemon.
 
 export default app;
 
 // Export a serverless handler for Vercel / other serverless platforms
 export const handler = serverless(app);
+
+// Provide a CommonJS fallback so that builders or adapters expecting
+// `module.exports = app` will still work. This is a no-op in pure ESM
+// environments because `module` is undefined there.
+if (typeof module !== "undefined" && module?.exports) {
+  module.exports = app;
+}
