@@ -1,5 +1,10 @@
 import axios from "axios";
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "https://youtubeclone-5hae.onrender.com/api" : "/api");
+// Use Vercel project env variable when set; fall back to relative `/api` in production
+export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "https://youtubeclone-5hae.onrender.com/api" : "/api");
+
+// Configure axios global defaults so cookies are sent to the backend
+axios.defaults.baseURL = API_BASE;
+axios.defaults.withCredentials = true;
 
 function getUserId() {
   return localStorage.getItem("userId") || "64c9f0f0f0f0f0f0f0f0f0f0";
@@ -15,20 +20,20 @@ function baseHeaders(admin = false) {
 
 export async function fetchPublicVideos(category) {
   const qs = category && category !== "All" ? `?category=${encodeURIComponent(category.toLowerCase())}` : "";
-  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(false) });
+  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(false), credentials: 'include' });
   return res.json();
 }
 
 export async function fetchMyVideos(category) {
   const base = `${API_BASE}/videos?mine=1`;
   const url = category && category !== "All" ? `${base}&category=${encodeURIComponent(category.toLowerCase())}` : base;
-  const res = await fetch(url, { headers: baseHeaders(false) });
+  const res = await fetch(url, { headers: baseHeaders(false), credentials: 'include' });
   return res.json();
 }
 
 export async function fetchAllVideosAdmin(category) {
   const qs = category && category !== "All" ? `?category=${encodeURIComponent(category.toLowerCase())}` : "";
-  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(true) });
+  const res = await fetch(`${API_BASE}/videos${qs}`, { headers: baseHeaders(true), credentials: 'include' });
   return res.json();
 }
 
@@ -37,6 +42,7 @@ export async function createVideo(payload) {
     method: "POST",
     headers: baseHeaders(false),
     body: JSON.stringify(payload),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -46,6 +52,7 @@ export async function updateVideo(id, payload) {
     method: "PATCH",
     headers: baseHeaders(false),
     body: JSON.stringify(payload),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -55,6 +62,7 @@ export async function adminMuteOverride(id, value) {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ adminMuteOverride: value }),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -64,6 +72,7 @@ export async function adminSetApproved(id, value) {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ isApproved: value }),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -73,6 +82,7 @@ export async function adminSetVisibility(id, visibility) {
     method: "PATCH",
     headers: baseHeaders(true),
     body: JSON.stringify({ visibility }),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -110,7 +120,8 @@ export async function uploadLogoFile(file, onProgress) {
 export async function deleteVideo(id) {
   const res = await fetch(`${API_BASE}/videos/${id}`, {
     method: "DELETE",
-    headers: baseHeaders(false)
+    headers: baseHeaders(false),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -118,7 +129,8 @@ export async function deleteVideo(id) {
 export async function adminDeleteVideo(id) {
   const res = await fetch(`${API_BASE}/admin/videos/${id}`, {
     method: "DELETE",
-    headers: baseHeaders(true)
+    headers: baseHeaders(true),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -126,21 +138,24 @@ export async function adminDeleteVideo(id) {
 export async function recordView(id) {
   const res = await fetch(`${API_BASE}/videos/${id}/view`, {
     method: "POST",
-    headers: baseHeaders(false)
+    headers: baseHeaders(false),
+    credentials: 'include'
   });
   return res.json();
 }
 
 export async function fetchNotifications() {
   const res = await fetch(`${API_BASE}/auth/notifications`, {
-    headers: baseHeaders(false)
+    headers: baseHeaders(false),
+    credentials: 'include'
   });
   return res.json();
 }
 
 export async function fetchComments(videoId) {
   const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
-    headers: baseHeaders(false)
+    headers: baseHeaders(false),
+    credentials: 'include'
   });
   return res.json();
 }
@@ -149,7 +164,8 @@ export async function postComment(videoId, text) {
   const res = await fetch(`${API_BASE}/videos/${videoId}/comments`, {
     method: "POST",
     headers: baseHeaders(false),
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text }),
+    credentials: 'include'
   });
   return res.json();
 }
