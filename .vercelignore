@@ -1,0 +1,5 @@
+server/src/uploads/*
+!server/src/uploads/.gitkeep
+node_modules
+.git
+.vercel

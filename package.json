@@ -1,10 +1,7 @@
 {
   "name": "youtube-clone-monorepo",
   "private": true,
-  "workspaces": [
-    "frontend/pj",
-    "server"
-  ],
+  "type": "module",
   "scripts": {
     "build": "echo 'Root build skipped'"
   },

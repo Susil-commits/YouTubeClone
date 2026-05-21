@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import crypto from "crypto";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const router = Router();
@@ -13,7 +14,13 @@ function hash(pw) {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadDir = path.join(__dirname, "../uploads");
+// On Vercel serverless, only /tmp is writable; use it for file uploads
+const uploadDir = process.env.VERCEL
+  ? "/tmp/uploads"
+  : path.join(__dirname, "../uploads");
+
+// Ensure upload directory exists (critical for Vercel where /tmp is ephemeral)
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
